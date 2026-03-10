@@ -43,15 +43,15 @@ def download_videos():
         'no_warnings': True
     }
 
-    # FIX: Removed FFmpeg dependency. Ab best available single file download hogi.
+    # 🔥 FIX: Fallback logic added (Instagram ya kisi aur par fix resolution na mile to crash nahi hoga, best download kar lega)
     if quality == 'audio':
-        ydl_opts['format'] = 'bestaudio/best' # Best audio nikalega (usually .m4a)
+        ydl_opts['format'] = 'bestaudio/best' 
     elif quality == 'high':
-        ydl_opts['format'] = 'best' # Best single video+audio file
+        ydl_opts['format'] = 'best'
     elif quality == 'medium':
-        ydl_opts['format'] = 'best[height<=720]' 
+        ydl_opts['format'] = 'best[height<=720]/best' # /best lagane se crash nahi hoga
     elif quality == 'low':
-        ydl_opts['format'] = 'best[height<=360]'
+        ydl_opts['format'] = 'best[height<=360]/best' # /best lagane se crash nahi hoga
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -61,4 +61,5 @@ def download_videos():
         return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 
 if __name__ == '__main__':
+    # host='0.0.0.0' allow karta hai ki aap apne phone/PC dono pe test kar sakein
     app.run(host='0.0.0.0', port=5000, debug=True)
