@@ -1,0 +1,36 @@
+===================================================
+   🚀 STUDIO DOWNLOADER (2026) - SETUP COMMANDS 🚀
+===================================================
+        Developed by Utkarsh & Rohit
+
+Jab aap is project ko Git se clone kar lein, toh 
+niche diye gaye commands run karke tool start karein.
+
+[ Option A: PC / Laptop (Windows/Linux) ke liye ]
+---------------------------------------------------
+1. Requirements install karein:
+   pip install flask yt-dlp
+
+2. Server start karein:
+   python app.py
+
+---------------------------------------------------
+[ Option B: Android (Termux App) ke liye ]
+---------------------------------------------------
+1. System update aur Python install karein:
+   pkg update && pkg upgrade -y && pkg install python -y
+
+2. Storage ki permission dein (Allow par click karein):
+   termux-setup-storage
+
+3. Requirements install karein:
+   pip install flask yt-dlp
+
+4. Server start karein:
+   python app.py
+
+===================================================
+🌟 FINAL STEP:
+Tool run hone ke baad apne browser mein ye link open karein:
+👉 http://127.0.0.1:5000
+===================================================
