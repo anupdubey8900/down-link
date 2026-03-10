@@ -1,10 +1,18 @@
 from flask import Flask, render_template, request, jsonify
 import yt_dlp
 import os
+import subprocess
 
 app = Flask(__name__)
 
-DOWNLOAD_FOLDER = 'downloads'
+# 🔥 FIX: Android ki main Gallery/Download folder ka rasta
+# Termux mein 'termux-setup-storage' karne ke baad ye rasta banta hai
+if os.path.exists('/sdcard/Download'):
+    DOWNLOAD_FOLDER = '/sdcard/Download/StudioDownloader'
+else:
+    # PC ke liye purana rasta
+    DOWNLOAD_FOLDER = 'downloads'
+
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
@@ -43,23 +51,29 @@ def download_videos():
         'no_warnings': True
     }
 
-    # 🔥 FIX: Fallback logic added (Instagram ya kisi aur par fix resolution na mile to crash nahi hoga, best download kar lega)
     if quality == 'audio':
         ydl_opts['format'] = 'bestaudio/best' 
     elif quality == 'high':
         ydl_opts['format'] = 'best'
     elif quality == 'medium':
-        ydl_opts['format'] = 'best[height<=720]/best' # /best lagane se crash nahi hoga
+        ydl_opts['format'] = 'best[height<=720]/best'
     elif quality == 'low':
-        ydl_opts['format'] = 'best[height<=360]/best' # /best lagane se crash nahi hoga
+        ydl_opts['format'] = 'best[height<=360]/best'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download(urls)
-        return jsonify({'success': True, 'message': 'Successfully Downloaded!'})
+        
+        # 🔥 FIX: Android ko batana ki nayi file aayi hai taaki Gallery mein dikhe
+        # Is command se Gallery refresh ho jati hai
+        try:
+            subprocess.run(["termux-media-scan", DOWNLOAD_FOLDER], check=False)
+        except:
+            pass
+
+        return jsonify({'success': True, 'message': 'Successfully Downloaded to Gallery!'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 
 if __name__ == '__main__':
-    # host='0.0.0.0' allow karta hai ki aap apne phone/PC dono pe test kar sakein
     app.run(host='0.0.0.0', port=5000, debug=True)
