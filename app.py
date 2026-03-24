@@ -5,12 +5,10 @@ import subprocess
 
 app = Flask(__name__)
 
-# 🔥 FIX: Android ki main Gallery/Download folder ka rasta
-# Termux mein 'termux-setup-storage' karne ke baad ye rasta banta hai
+# Storage Path for Gallery
 if os.path.exists('/sdcard/Download'):
     DOWNLOAD_FOLDER = '/sdcard/Download/StudioDownloader'
 else:
-    # PC ke liye purana rasta
     DOWNLOAD_FOLDER = 'downloads'
 
 if not os.path.exists(DOWNLOAD_FOLDER):
@@ -24,8 +22,10 @@ def index():
 def get_video_info():
     data = request.get_json()
     url = data.get('url')
-    ydl_opts = {'quiet': True, 'no_warnings': True} 
+    if '.m3u8' in url:
+        return jsonify({'success': True, 'title': 'HLS_Stream_Video', 'size_mb': 'Unknown', 'url': url})
     
+    ydl_opts = {'quiet': True, 'no_warnings': True} 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -40,40 +40,33 @@ def get_video_info():
 def download_videos():
     data = request.get_json()
     urls = data.get('urls', [])
-    quality = data.get('quality', 'high')
+    quality = data.get('quality', '720') # Default 720p
     
-    if not urls:
-        return jsonify({'success': False, 'message': 'Koi link nahi mila!'})
-
     ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
+        'merge_output_format': 'mp4',
         'quiet': True,
-        'no_warnings': True
     }
 
+    # Resolution Logic (with Fallback)
     if quality == 'audio':
-        ydl_opts['format'] = 'bestaudio/best' 
-    elif quality == 'high':
-        ydl_opts['format'] = 'best'
-    elif quality == 'medium':
-        ydl_opts['format'] = 'best[height<=720]/best'
-    elif quality == 'low':
-        ydl_opts['format'] = 'best[height<=360]/best'
+        ydl_opts['format'] = 'bestaudio/best'
+    elif quality == '4k':
+        ydl_opts['format'] = 'bestvideo[height<=2160]+bestaudio/best'
+    else:
+        # For 1080, 720, 480, 240
+        ydl_opts['format'] = f'bestvideo[height<={quality}]+bestaudio/best'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download(urls)
         
-        # 🔥 FIX: Android ko batana ki nayi file aayi hai taaki Gallery mein dikhe
-        # Is command se Gallery refresh ho jati hai
-        try:
-            subprocess.run(["termux-media-scan", DOWNLOAD_FOLDER], check=False)
-        except:
-            pass
+        try: subprocess.run(["termux-media-scan", DOWNLOAD_FOLDER], check=False)
+        except: pass
 
-        return jsonify({'success': True, 'message': 'Successfully Downloaded to Gallery!'})
+        return jsonify({'success': True, 'message': f'Downloaded in {quality}p quality!'})
     except Exception as e:
-        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+        return jsonify({'success': False, 'message': str(e)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
